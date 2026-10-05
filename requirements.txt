@@ -1,6 +1,10 @@
-fastapi>=0.115,<1
-uvicorn[standard]>=0.30,<1
-streamlit>=1.40,<2
-requests>=2.32,<3
-gitpython>=3.1,<4
-pydantic>=2.8,<3
+streamlit
+gitpython
+requests
+fastapi
+uvicorn
+pydantic
+transformers
+torch
+accelerate
+safetensors

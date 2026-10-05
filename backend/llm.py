@@ -1,5 +1,6 @@
 import os
 import requests
+import streamlit as st
 
 
 OLLAMA_URL = os.getenv(
@@ -9,13 +10,14 @@ OLLAMA_URL = os.getenv(
 
 OLLAMA_MODEL = os.getenv(
     "OLLAMA_MODEL",
-    "qwen2.5:3b"
+    "qwen2.5:0.5b"
 )
 
+HF_MODEL = "Qwen/Qwen2.5-0.5B-Instruct"
 
-def explain_repository(repository_context: str) -> str:
 
-    prompt = f"""
+def build_prompt(repository_context: str) -> str:
+    return f"""
 You are an expert software engineering teacher.
 
 Your job is to understand an ENTIRE GitHub repository
@@ -125,58 +127,135 @@ Here is the repository:
 {repository_context}
 """
 
-    try:
 
-        response = requests.post(
-            f"{OLLAMA_URL.rstrip('/')}/api/generate",
+def _explain_with_ollama(repository_context: str) -> str:
+    prompt = build_prompt(repository_context)
 
-            json={
-                "model": OLLAMA_MODEL,
-                "prompt": prompt,
-                "stream": False,
+    response = requests.post(
+        f"{OLLAMA_URL.rstrip('/')}/api/generate",
+        json={
+            "model": OLLAMA_MODEL,
+            "prompt": prompt,
+            "stream": False,
+            "options": {
+                "temperature": 0.1,
+                "num_ctx": 4096,
+                "num_predict": 900
+            }
+        },
+        timeout=600
+    )
 
-                "options": {
-                    "temperature": 0.1,
-                    "num_ctx": 4096,
-                    "num_predict": 900
-                }
-            },
-
-            timeout=600
-        )
-
-        response.raise_for_status()
-
-    except requests.exceptions.ConnectionError as exc:
-
-        raise RuntimeError(
-            "Cannot connect to Ollama. "
-            "Make sure Ollama is running."
-        ) from exc
-
-    except requests.exceptions.Timeout as exc:
-
-        raise RuntimeError(
-            "The local LLM took too long to respond."
-        ) from exc
-
-    except requests.RequestException as exc:
-
-        raise RuntimeError(
-            f"Ollama request failed: {exc}"
-        ) from exc
+    response.raise_for_status()
 
     data = response.json()
 
-    explanation = data.get(
-        "response",
-        ""
-    ).strip()
+    explanation = data.get("response", "").strip()
 
     if not explanation:
-
         raise RuntimeError(
-            "The local LLM returned an empty response."
+            "Ollama returned an empty response."
         )
 
     return explanation
+
+
+@st.cache_resource
+def load_huggingface_model():
+    """
+    Load Qwen 2.5 0.5B locally using Hugging Face Transformers.
+
+    Streamlit caches the model so it is not downloaded
+    every time the application reruns.
+    """
+
+    from transformers import AutoTokenizer, AutoModelForCausalLM
+
+    tokenizer = AutoTokenizer.from_pretrained(HF_MODEL)
+
+    model = AutoModelForCausalLM.from_pretrained(
+        HF_MODEL,
+        torch_dtype="auto"
+    )
+
+    return tokenizer, model
+
+
+def _explain_with_transformers(repository_context: str) -> str:
+    import torch
+
+    tokenizer, model = load_huggingface_model()
+
+    prompt = build_prompt(repository_context)
+
+    messages = [
+        {
+            "role": "system",
+            "content": (
+                "You are an expert software engineering teacher "
+                "who explains GitHub repositories to college students."
+            )
+        },
+        {
+            "role": "user",
+            "content": prompt
+        }
+    ]
+
+    text = tokenizer.apply_chat_template(
+        messages,
+        tokenize=False,
+        add_generation_prompt=True
+    )
+
+    inputs = tokenizer(
+        text,
+        return_tensors="pt",
+        truncation=True,
+        max_length=6000
+    )
+
+    with torch.no_grad():
+        outputs = model.generate(
+            **inputs,
+            max_new_tokens=900,
+            temperature=0.1,
+            do_sample=False
+        )
+
+    generated_tokens = outputs[0][inputs["input_ids"].shape[1]:]
+
+    explanation = tokenizer.decode(
+        generated_tokens,
+        skip_special_tokens=True
+    ).strip()
+
+    if not explanation:
+        raise RuntimeError(
+            "Qwen returned an empty response."
+        )
+
+    return explanation
+
+
+def explain_repository(repository_context: str) -> str:
+    """
+    Use Ollama when available.
+
+    If Ollama is unavailable, automatically fall back
+    to the same Qwen 2.5 0.5B model through Transformers.
+
+    This allows the same application to work both:
+    - locally with Ollama
+    - online on Streamlit Cloud
+    """
+
+    try:
+        return _explain_with_ollama(repository_context)
+
+    except (
+        requests.exceptions.ConnectionError,
+        requests.exceptions.Timeout,
+        requests.exceptions.RequestException
+    ):
+        return _explain_with_transformers(repository_context)
