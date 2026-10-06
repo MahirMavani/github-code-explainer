@@ -1,112 +1,80 @@
-# Local GitHub Repository Code Explainer
+# Local & Cloud GitHub Repository Code Explainer (RepoLens AI)
 
-A student-friendly GenAI mini project that accepts a public GitHub repository URL, clones the repository locally, extracts relevant source-code files, sends the code to a locally running LLM through Ollama, and displays a simple-language explanation in a Streamlit frontend.
+A student-friendly GenAI project that accepts a public GitHub repository URL, clones the repository, extracts relevant source-code files, and generates a simple-language explanation using an AI-powered Qwen model.
 
 ## Architecture
 
+```
 GitHub Repository
-→ Repository Processing
-→ Local LLM (Ollama + Qwen)
-→ FastAPI Backend
-→ Streamlit Frontend
-→ Explanation
+  → Repository Processing (GitPython + Code Processor)
+  → Qwen AI Model (Ollama locally / Hugging Face Serverless on Cloud)
+  → Streamlit Frontend
+  → Structured Beginner-Friendly Explanation
+```
 
 ## Technology Stack
 
-- Python
-- FastAPI
-- Pydantic
-- Uvicorn
-- GitPython
-- Streamlit
-- Ollama
-- Qwen 2.5 3B
+- **Frontend:** Streamlit
+- **Backend/Processing:** Python, GitPython, FastAPI, Pydantic
+- **AI Models:**
+  - **Local:** Ollama + Qwen 2.5 (`qwen2.5:0.5b` or `qwen2.5:3b`)
+  - **Cloud:** Hugging Face Serverless Inference API (`Qwen/Qwen2.5-Coder-32B-Instruct`)
 
-## Requirements
+---
 
-Install:
+## 1. Local Run (Ollama)
+
+### Prerequisites
 
 1. Python 3.10+
 2. Git
-3. Ollama
+3. Ollama (download from [ollama.com](https://ollama.com))
 
-Then install the Python dependencies:
-
+Install dependencies:
 ```bash
 pip install -r requirements.txt
 ```
 
-Download the local model:
-
+Download and run the local Qwen model:
 ```bash
-ollama pull qwen2.5:3b
+ollama run qwen2.5:0.5b
 ```
 
-Test the model:
-
-```bash
-ollama run qwen2.5:3b
-```
-
-## Run the project
-
-Open a terminal in the project root.
-
-### Terminal 1 - FastAPI
-
-```bash
-uvicorn backend.main:app --reload
-```
-
-The backend will run at:
-
-http://127.0.0.1:8000
-
-API documentation:
-
-http://127.0.0.1:8000/docs
-
-### Terminal 2 - Streamlit
+### Launch the App
 
 ```bash
 streamlit run frontend/app.py
 ```
 
-Streamlit will show a local URL, usually:
+The app will automatically detect your local Ollama instance and use it for inference.
 
-http://localhost:8501
+---
 
-## Example
+## 2. Cloud Deployment (Streamlit Cloud)
 
-Use a public repository URL such as:
+When deployed to Streamlit Community Cloud:
 
-```text
-https://github.com/psf/requests
-```
+1. The app connects to the **Hugging Face Serverless Inference API** running Qwen 2.5 on cloud GPUs (lightweight and fast, with zero heavy local CPU model loading).
+2. Configure your free Hugging Face User Access Token:
+   - In Streamlit Cloud: Go to **App Settings** → **Secrets** and add:
+     ```toml
+     HF_TOKEN = "hf_your_token_here"
+     ```
+   - Or enter it directly in the app's sidebar under **Cloud AI Settings**.
+   - Create a free token at [huggingface.co/settings/tokens](https://huggingface.co/settings/tokens).
+
+---
+
+## Example Repositories to Test
+
+Use public repository URLs such as:
+- `https://github.com/psf/requests`
+- `https://github.com/pallets/click`
 
 The application will:
-
 1. Validate the GitHub URL.
-2. Clone the repository.
-3. Find relevant source-code files.
-4. Ignore common generated/binary directories.
-5. Extract a bounded amount of source code.
-6. Send the code to Qwen through Ollama.
-7. Generate a beginner-friendly explanation.
-8. Display the explanation in Streamlit.
-
-## Important limitation
-
-This version is designed for public GitHub repositories. Private repositories require authentication and are intentionally not handled by the basic version.
-
-Large repositories are automatically limited so that the local LLM is not overloaded with too much code.
-
-## Viva explanation
-
-If the faculty asks "How does your project work?", explain:
-
-"The user enters a public GitHub repository URL in the Streamlit frontend. The frontend sends the URL to a FastAPI backend. The backend clones the repository using GitPython and identifies relevant source-code files. The code is then combined into a controlled context and sent to a locally running Qwen model through Ollama. The model generates a simple explanation of the project, which the FastAPI backend returns to Streamlit. Finally, Streamlit displays the generated explanation to the user."
-
-## Why local LLM?
-
-"The project uses a local LLM so the code is processed on the user's machine rather than being sent to a cloud AI API. It also demonstrates how a GenAI application can integrate a locally running open-source model."
+2. Clone the repository into a temporary workspace.
+3. Find relevant source-code files and filter out noise (tests, lock files, virtual environments).
+4. Extract a bounded amount of source code.
+5. Send the code to Qwen AI.
+6. Display a clean, structured explanation and file map.
