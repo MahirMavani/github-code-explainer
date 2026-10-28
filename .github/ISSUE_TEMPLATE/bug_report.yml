@@ -1,0 +1,11 @@
+name: Bug Report
+description: Report a bug in GitHub Code Explainer
+labels: ["bug"]
+body:
+  - type: input
+    id: summary
+    attributes:
+      label: Bug Summary
+      placeholder: e.g. Repository cloning fails with private submodules
+    validations:
+      required: true

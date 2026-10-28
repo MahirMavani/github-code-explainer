@@ -1,8 +1,16 @@
-# Local & Cloud GitHub Repository Code Explainer (RepoLens AI)
+# 🔍 RepoLens AI — Local & Cloud GitHub Repository Code Explainer
 
-A student-friendly GenAI project that accepts a public GitHub repository URL, clones the repository, extracts relevant source-code files, and generates a simple-language explanation using an AI-powered Qwen model.
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Python](https://img.shields.io/badge/Python-3.10%2B-blue.svg)](https://www.python.org/)
+[![Streamlit](https://img.shields.io/badge/Streamlit-FF4B4B.svg?logo=streamlit&logoColor=white)](https://streamlit.io/)
+[![Ollama](https://img.shields.io/badge/Ollama-Local%20LLM-000000.svg)](https://ollama.com/)
+[![Qwen](https://img.shields.io/badge/Model-Qwen%202.5-6366F1.svg)](https://huggingface.co/Qwen)
 
-## Architecture
+> **A GenAI application that accepts any public GitHub repository URL, clones and extracts its source architecture, and synthesizes clear, structured explanations using local Ollama or cloud Hugging Face Qwen 2.5 models.**
+
+---
+
+## 🏗️ Architecture
 
 ```
 GitHub Repository
@@ -12,7 +20,9 @@ GitHub Repository
   → Structured Beginner-Friendly Explanation
 ```
 
-## Technology Stack
+---
+
+## 🛠️ Technology Stack
 
 - **Frontend:** Streamlit
 - **Backend/Processing:** Python, GitPython, FastAPI, Pydantic
@@ -65,7 +75,7 @@ When deployed to Streamlit Community Cloud:
 
 ---
 
-## Example Repositories to Test
+## 🧪 Example Repositories to Test
 
 Use public repository URLs such as:
 - `https://github.com/psf/requests`
@@ -78,3 +88,9 @@ The application will:
 4. Extract a bounded amount of source code.
 5. Send the code to Qwen AI.
 6. Display a clean, structured explanation and file map.
+
+---
+
+## 📄 License
+
+This repository is licensed under the [MIT License](LICENSE).
